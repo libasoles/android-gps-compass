@@ -5,6 +5,7 @@ import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Looper;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -15,26 +16,30 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationAvailability;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.tasks.OnSuccessListener;
-
-import org.jetbrains.annotations.NotNull;
-
 
 public class MainActivity extends AppCompatActivity {
 
     private FusedLocationProviderClient fusedLocationClient;
     private boolean wasLocationPermissionGranted = false;
 
+    /**
+     * On request permission result
+     */
     private ActivityResultLauncher<String> requestPermissionLauncher = registerForActivityResult(
             new ActivityResultContracts.RequestPermission(), isGranted -> {
                 wasLocationPermissionGranted = isGranted;
                 if (isGranted) {
-                    getLastKnowLocation();
+                    subscribeToLocation();
                 } else {
                     explainTheNeedForPermission();
                 }
             });
+    private LocationCallback locationCallback;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,14 +48,22 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        displayMessage("Cargando...");
-
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-        checkPermissions();
-    }
 
-    private void displayMessage(String s) {
-        ((TextView) findViewById(R.id.location)).setText(s);
+        locationCallback = new LocationCallback() {
+            @Override
+            public void onLocationResult(LocationResult locationResult) {
+                super.onLocationResult(locationResult);
+                displayCurrentLocation(locationResult.getLastLocation());
+            }
+
+            @Override
+            public void onLocationAvailability(LocationAvailability locationAvailability) {
+                super.onLocationAvailability(locationAvailability);
+            }
+        };
+
+        checkPermissions();
     }
 
     private void checkPermissions() {
@@ -60,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
         wasLocationPermissionGranted = result == PackageManager.PERMISSION_GRANTED;
 
         if (wasLocationPermissionGranted) {
-            getLastKnowLocation();
+            subscribeToLocation();
         } else if (shouldShowRequestPermissionRationale(locationPermission)) {
             explainTheNeedForPermission();
         } else {
@@ -69,30 +82,22 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @SuppressLint("MissingPermission")
-    private void getLastKnowLocation() {
-        fusedLocationClient.getLastLocation()
-                .addOnSuccessListener(this, onLocationResult());
+    private void subscribeToLocation() {
+        LocationRequest locationRequest = new LocationRequest();
+        locationRequest.setInterval(1000);
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.myLooper());
     }
 
-    @NotNull
-    private OnSuccessListener<Location> onLocationResult() {
-        return location -> {
-            if (location != null) {
-                Toast.makeText(MainActivity.this, "Uju!", Toast.LENGTH_SHORT).show();
-
-                displayCurrentCoordinates(location);
-            } else {
-                Toast.makeText(MainActivity.this, "Oh no!", Toast.LENGTH_SHORT).show();
-            }
-        };
-    }
-
-    private void displayCurrentCoordinates(Location location) {
+    private void displayCurrentLocation(Location location) {
         String message = (location.getLatitude()) + ", " + location.getLongitude();
-        displayMessage(message);
+        ((TextView) findViewById(R.id.location)).setText("Coordinates: " + message);
+        ((TextView) findViewById(R.id.speed)).setText("Speed: " + location.getSpeed());
+        ((TextView) findViewById(R.id.orientation)).setText("Orientation: " + location.getBearing());
+        findViewById(R.id.arrow).setRotation(location.getBearing());
     }
 
     private void explainTheNeedForPermission() {
-        Toast.makeText(MainActivity.this, "Tenemos que hablar.", Toast.LENGTH_SHORT).show();
+        Toast.makeText(MainActivity.this, "We need to talk.", Toast.LENGTH_SHORT).show();
     }
 }
