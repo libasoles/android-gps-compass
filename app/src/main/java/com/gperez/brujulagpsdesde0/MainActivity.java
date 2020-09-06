@@ -12,11 +12,9 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationAvailability;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
@@ -26,6 +24,7 @@ public class MainActivity extends AppCompatActivity {
 
     private FusedLocationProviderClient fusedLocationClient;
     private boolean wasLocationPermissionGranted = false;
+    private LocationCallback locationCallback;
 
     /**
      * On request permission result
@@ -39,14 +38,11 @@ public class MainActivity extends AppCompatActivity {
                     explainTheNeedForPermission();
                 }
             });
-    private LocationCallback locationCallback;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
@@ -55,11 +51,6 @@ public class MainActivity extends AppCompatActivity {
             public void onLocationResult(LocationResult locationResult) {
                 super.onLocationResult(locationResult);
                 displayCurrentLocation(locationResult.getLastLocation());
-            }
-
-            @Override
-            public void onLocationAvailability(LocationAvailability locationAvailability) {
-                super.onLocationAvailability(locationAvailability);
             }
         };
 
@@ -84,7 +75,7 @@ public class MainActivity extends AppCompatActivity {
     @SuppressLint("MissingPermission")
     private void subscribeToLocation() {
         LocationRequest locationRequest = new LocationRequest();
-        locationRequest.setInterval(1000);
+        locationRequest.setInterval(2000);
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.myLooper());
     }
@@ -94,6 +85,7 @@ public class MainActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.location)).setText("Coordinates: " + message);
         ((TextView) findViewById(R.id.speed)).setText("Speed: " + location.getSpeed());
         ((TextView) findViewById(R.id.orientation)).setText("Orientation: " + location.getBearing());
+
         findViewById(R.id.arrow).setRotation(location.getBearing());
     }
 

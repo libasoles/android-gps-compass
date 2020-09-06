@@ -1,25 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-    <com.google.android.material.appbar.AppBarLayout
+    <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:theme="@style/AppTheme.AppBarOverlay">
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="2mm"
+        >
 
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
+        <TextView android:id="@+id/location"
+            android:layout_height="wrap_content"
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorPrimary"
-            app:popupTheme="@style/AppTheme.PopupOverlay" />
+            />
 
-    </com.google.android.material.appbar.AppBarLayout>
+        <TextView android:id="@+id/speed"
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            />
 
-    <include layout="@layout/content_main" />
+        <TextView android:id="@+id/orientation"
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            />
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+        <ImageView
+            android:id="@+id/arrow"
+            android:layout_height="match_parent"
+            android:layout_width="wrap_content"
+            android:layout_gravity="center"
+
+            android:src="@drawable/arrow3" />
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
