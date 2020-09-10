@@ -1,11 +1,12 @@
 package com.gperez.brujulagpsdesde0;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
+import android.content.BroadcastReceiver;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
-import android.os.Looper;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -14,18 +15,9 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationCallback;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationResult;
-import com.google.android.gms.location.LocationServices;
-
 public class MainActivity extends AppCompatActivity {
-
-    private FusedLocationProviderClient fusedLocationClient;
+    BroadcastReceiver locationBroadcastReceiver;
     private boolean wasLocationPermissionGranted = false;
-    private LocationCallback locationCallback;
-
     /**
      * On request permission result
      */
@@ -33,7 +25,7 @@ public class MainActivity extends AppCompatActivity {
             new ActivityResultContracts.RequestPermission(), isGranted -> {
                 wasLocationPermissionGranted = isGranted;
                 if (isGranted) {
-                    subscribeToLocation();
+                    startLocationService();
                 } else {
                     explainTheNeedForPermission();
                 }
@@ -44,17 +36,21 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-
-        locationCallback = new LocationCallback() {
-            @Override
-            public void onLocationResult(LocationResult locationResult) {
-                super.onLocationResult(locationResult);
-                displayCurrentLocation(locationResult.getLastLocation());
-            }
-        };
-
         checkPermissions();
+    }
+
+    private void startLocationService() {
+        subscribeToLocationService();
+
+        Intent locationService = new Intent(this, GoogleLocationService.class);
+        startService(locationService);
+    }
+
+    private void subscribeToLocationService() {
+        locationBroadcastReceiver = new LocationBroadcastReceiver(
+                (location) -> displayCurrentLocation(location)
+        );
+        registerReceiver(locationBroadcastReceiver, new IntentFilter("CURRENT_LOCATION"));
     }
 
     private void checkPermissions() {
@@ -64,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
         wasLocationPermissionGranted = result == PackageManager.PERMISSION_GRANTED;
 
         if (wasLocationPermissionGranted) {
-            subscribeToLocation();
+            startLocationService();
         } else if (shouldShowRequestPermissionRationale(locationPermission)) {
             explainTheNeedForPermission();
         } else {
@@ -72,24 +68,26 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @SuppressLint("MissingPermission")
-    private void subscribeToLocation() {
-        LocationRequest locationRequest = new LocationRequest();
-        locationRequest.setInterval(2000);
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.myLooper());
+    private void explainTheNeedForPermission() {
+        Toast.makeText(MainActivity.this, "We need to talk.", Toast.LENGTH_SHORT).show();
     }
 
     private void displayCurrentLocation(Location location) {
         String message = (location.getLatitude()) + ", " + location.getLongitude();
-        ((TextView) findViewById(R.id.location)).setText("Coordinates: " + message);
-        ((TextView) findViewById(R.id.speed)).setText("Speed: " + location.getSpeed());
-        ((TextView) findViewById(R.id.orientation)).setText("Orientation: " + location.getBearing());
+        setTextFor(R.id.location, "Coordinates: " + message);
+        setTextFor(R.id.speed, "Speed: " + location.getSpeed());
+        setTextFor(R.id.orientation, "Orientation: " + location.getBearing());
 
         findViewById(R.id.arrow).setRotation(location.getBearing());
     }
 
-    private void explainTheNeedForPermission() {
-        Toast.makeText(MainActivity.this, "We need to talk.", Toast.LENGTH_SHORT).show();
+    private void setTextFor(int p, String text) {
+        ((TextView) findViewById(p)).setText(text);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(locationBroadcastReceiver);
     }
 }
